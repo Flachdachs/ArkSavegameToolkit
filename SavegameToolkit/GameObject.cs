@@ -40,6 +40,9 @@ namespace SavegameToolkit {
         [JsonProperty(Order = 7)]
         public LocationData Location { get; private set; }
 
+        public bool IsCryo {get; set;}
+
+
         /// <summary>
         /// Cached propertiesSize, avoids calculating the size of properties twice
         /// </summary>

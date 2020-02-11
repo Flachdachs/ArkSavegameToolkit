@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SavegameToolkit.Propertys;
 using SavegameToolkit.Types;
+
 
 namespace SavegameToolkit {
 
@@ -87,6 +89,41 @@ namespace SavegameToolkit {
             if (SaveVersion > 6) {
                 readBinaryHibernation(archive, options);
             }
+
+
+
+            //Now parse out cryo creature data
+            foreach (var cryo in this.Objects.Where(x => x.ClassName.ToString().Contains("Cryop")).ToList())
+            {
+                try
+                {
+                    var contents = ((((((((Structs.StructPropertyList)((cryo.Properties[4] as Propertys.PropertyArray).Value as Arrays.ArkArrayStruct)[0]).Properties[6] as Propertys.PropertyStruct)
+                    .Value as Structs.StructPropertyList).Properties[0] as Propertys.PropertyArray).Value as Arrays.ArkArrayStruct)[0] as Structs.StructPropertyList).Properties[0] as Propertys.PropertyArray).Value as Arrays.ArkArrayUInt8;
+
+                    var cryoStream = new System.IO.MemoryStream(contents.ToArray<Byte>());
+
+                    using (ArkArchive cryoArchive = new ArkArchive(cryoStream))
+                    {
+                        cryoArchive.ReadBytes(4);
+                        var dino = new GameObject(cryoArchive);
+                        var statusobject = new GameObject(cryoArchive);
+                        dino.LoadProperties(cryoArchive, new GameObject(), 0);
+                        statusobject.LoadProperties(cryoArchive, new GameObject(), 0);
+                        dino.IsCryo = true;
+
+                        addObject(dino, true);
+                        addObject(statusobject, true);
+
+                        //hack the id's so that the dino points to the appropriate dinostatuscomponent
+                        var statusComponentRef = dino.GetTypedProperty<PropertyObject>("MyCharacterStatusComponent");
+                        statusComponentRef.Value.ObjectId = statusobject.Id;
+
+                    }
+                }
+                catch (Exception)
+                { }
+            }
+                                
 
             OldNameList = archive.HasUnknownNames? archive.NameTable: null;
             HasUnknownData = archive.HasUnknownData;
@@ -202,6 +239,7 @@ namespace SavegameToolkit {
         private void readBinaryObjects(ArkArchive archive, ReadingOptions options) {
             if (options.GameObjects) {
                 int count = archive.ReadInt();
+                
 
                 Objects.Clear();
                 ObjectMap.Clear();
