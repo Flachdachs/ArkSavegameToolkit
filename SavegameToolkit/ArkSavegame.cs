@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SavegameToolkit.Arrays;
 using SavegameToolkit.Propertys;
+using SavegameToolkit.Structs;
 using SavegameToolkit.Types;
 
 
@@ -93,13 +95,19 @@ namespace SavegameToolkit {
 
 
             //Now parse out cryo creature data
-            foreach (var cryo in this.Objects.Where(x => x.ClassName.ToString().Contains("Cryop")).ToList())
+            foreach (var cryo in this.Objects.Where(x => x.ClassName.ToString().Contains("Cryop") && x.HasAnyProperty("CustomItemDatas")).ToList())
             {
-   
-                var contents = ((((((((Structs.StructPropertyList)((cryo.Properties[4] as Propertys.PropertyArray).Value as Arrays.ArkArrayStruct)[0]).Properties[6] as Propertys.PropertyStruct)
-                .Value as Structs.StructPropertyList).Properties[0] as Propertys.PropertyArray).Value as Arrays.ArkArrayStruct)[0] as Structs.StructPropertyList).Properties[0] as Propertys.PropertyArray).Value as Arrays.ArkArrayUInt8;
 
-                var cryoStream = new System.IO.MemoryStream(contents.ToArray<Byte>());
+                // i merge both code (mine from the comment and yours) its working now but you need to remove the .WithObjectFilter(o => !o.IsItem && (o.Parent != null || o.Components.Any())) from the ImportSavegame
+                StructPropertyList cidValues = (StructPropertyList)((ArkArrayStruct)((PropertyArray)cryo.Properties.Where(p => p.NameString == "CustomItemDatas").FirstOrDefault()).Value)[0];
+                StructPropertyList cdbValue = (StructPropertyList)((PropertyStruct)cidValues.Properties.Where(p => p.NameString == "CustomDataBytes").FirstOrDefault()).Value;
+                StructPropertyList baValue = (StructPropertyList)((ArkArrayStruct)((PropertyArray)cdbValue.Properties.Where(p => p.NameString == "ByteArrays").FirstOrDefault()).Value)[0];
+                ArkArrayUInt8 bValues = ((ArkArrayUInt8)((PropertyArray)baValue.Properties.Where(p => p.NameString == "Bytes").FirstOrDefault()).Value);
+
+                //var contents = ((((((((Structs.StructPropertyList)((cryo.Properties[4] as Propertys.PropertyArray).Value as Arrays.ArkArrayStruct)[0]).Properties[6] as Propertys.PropertyStruct)
+                //.Value as Structs.StructPropertyList).Properties[0] as Propertys.PropertyArray).Value as Arrays.ArkArrayStruct)[0] as Structs.StructPropertyList).Properties[0] as Propertys.PropertyArray).Value as Arrays.ArkArrayUInt8;
+
+                var cryoStream = new System.IO.MemoryStream(bValues.ToArray<Byte>());
 
                 using (ArkArchive cryoArchive = new ArkArchive(cryoStream))
                 {
