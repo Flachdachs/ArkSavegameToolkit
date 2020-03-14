@@ -100,16 +100,14 @@ namespace SavegameToolkit
             // Now parse cryo creature data
             foreach (var cryo in this.Objects.Where(x => x.ClassName.ToString().Contains("Cryop")).ToList())
             {
-                StructPropertyList cidValues = (StructPropertyList)((ArkArrayStruct)((PropertyArray)cryo.Properties.FirstOrDefault(p => p.NameString == "CustomItemDatas"))?.Value)?[0];
-                if (cidValues == null) continue;
-                StructPropertyList cdbValue = (StructPropertyList)((PropertyStruct)cidValues.Properties.FirstOrDefault(p => p.NameString == "CustomDataBytes"))?.Value;
-                if (cdbValue == null) continue;
-                StructPropertyList baValue = (StructPropertyList)((ArkArrayStruct)((PropertyArray)cdbValue.Properties.FirstOrDefault(p => p.NameString == "ByteArrays"))?.Value)?[0];
-                if (baValue == null) continue;
-                ArkArrayUInt8 bValues = (ArkArrayUInt8)((PropertyArray)baValue.Properties.FirstOrDefault(p => p.NameString == "Bytes"))?.Value;
-                if (bValues == null) continue;
+                StructPropertyList customData = cryo.GetPropertyValue<IArkArray, ArkArrayStruct>("CustomItemDatas")?.FirstOrDefault() as StructPropertyList;
+                PropertyStruct customDataBytes = customData?.Properties.FirstOrDefault(p => p.NameString == "CustomDataBytes") as PropertyStruct;
+                PropertyArray byteArrays = (customDataBytes?.Value as StructPropertyList)?.Properties.FirstOrDefault(property => property.NameString == "ByteArrays") as PropertyArray;
+                ArkArrayStruct byteArraysValue = byteArrays?.Value as ArkArrayStruct;
+                ArkArrayUInt8 creatureBytes = ((byteArraysValue?[0] as StructPropertyList)?.Properties.FirstOrDefault(p => p.NameString == "Bytes") as PropertyArray)?.Value as ArkArrayUInt8;
+                if (creatureBytes == null) continue;
 
-                var cryoStream = new System.IO.MemoryStream(bValues.ToArray<byte>());
+                var cryoStream = new System.IO.MemoryStream(creatureBytes.ToArray<byte>());
 
                 using (ArkArchive cryoArchive = new ArkArchive(cryoStream))
                 {
