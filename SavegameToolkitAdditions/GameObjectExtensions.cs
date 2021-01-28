@@ -1,8 +1,12 @@
 ﻿using System.Linq;
 using SavegameToolkit;
+using SavegameToolkit.Arrays;
+using SavegameToolkit.Propertys;
+using SavegameToolkit.Structs;
 using SavegameToolkit.Types;
 
 namespace SavegameToolkitAdditions {
+
     public static class GameObjectExtensions {
         public static bool IsCreature(this GameObject gameObject) {
             return gameObject.HasAnyProperty("bServerInitializedDino");
@@ -111,5 +115,34 @@ namespace SavegameToolkitAdditions {
         public static long CreateDinoId(int id1, int id2) {
             return (long)id1 << 32 | (id2 & 0xFFFFFFFFL);
         }
+
+        public static ArkContainer GetCryopodCreature(this GameObject gameObject) {
+            StructPropertyList customData = gameObject.GetPropertyValue<IArkArray, ArkArrayStruct>("CustomItemDatas").FirstOrDefault() as StructPropertyList;
+            PropertyStruct customDataBytes = customData?.Properties.FirstOrDefault(p => p.NameString == "CustomDataBytes") as PropertyStruct;
+            PropertyArray byteArrays = (customDataBytes?.Value as StructPropertyList)?.Properties.FirstOrDefault(property => property.NameString == "ByteArrays") as PropertyArray;
+            ArkArrayStruct byteArraysValue = byteArrays?.Value as ArkArrayStruct;
+
+            if (!(((byteArraysValue?[0] as StructPropertyList)?.Properties.FirstOrDefault(p => p.NameString == "Bytes") as PropertyArray)?.Value is ArkArrayUInt8 creatureBytes)) {
+                return null;
+            }
+            ArkContainer creature = new ArkContainer(creatureBytes);
+
+            /*
+            ArkArrayUInt8 saddleBytes = ((byteArraysValue?[1] as StructPropertyList)?.Properties.FirstOrDefault(p => p.NameString == "Bytes") as PropertyArray)?.Value as ArkArrayUInt8;
+
+            using (MemoryStream stream = new MemoryStream(saddleBytes?.ToArray())) {
+                using (ArkArchive archive = new ArkArchive(stream)) {
+                    int objectCount = archive.ReadInt();
+
+                    //List<GameObject> objects = new List<GameObject>();
+                    //for (int i = 0; i < objectCount; i++) {
+                    //    //objects.Add(new GameObject(archive));
+                    //}
+                }
+            }
+            */
+            return creature;
+        }
     }
+
 }

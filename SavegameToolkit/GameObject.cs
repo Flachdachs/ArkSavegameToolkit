@@ -377,7 +377,14 @@ namespace SavegameToolkit {
             }
         }
 
-        public void AddComponent(GameObject component) => Components.Add(component.Names[0], component);
+        public void AddComponent(GameObject component) {
+            ArkName name = component.Names[0];
+            if (Components.ContainsKey(component.Names[0])) {
+                name = ArkName.From(name.Name + "_" + Guid.NewGuid());
+                Debug.WriteLine($"Component already exists, written as {name}");
+            }
+            Components.Add(name, component);
+        }
 
         public static void ClearUUIDCache() => uuidCache.Clear();
 

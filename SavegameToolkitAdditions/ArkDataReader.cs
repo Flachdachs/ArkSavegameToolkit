@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
@@ -43,8 +44,12 @@ namespace SavegameToolkitAdditions {
         }
 
         public ArkDataEntry GetStructureForClass(string classString) {
-            if (structures == null) {
-                structures = Structures?.ToDictionary(entry => entry.Class);
+            if (structures == null && Structures != null) {
+                //structures = Structures?.ToDictionary(entry => entry.Class);
+                structures = new Dictionary<string, ArkDataEntry>();
+                foreach (ArkDataEntry structure in Structures) {
+                    structures[structure.Class] = structure; // override existing class names with the later one
+                }
             }
 
             return structures != null && structures.TryGetValue(classString, out ArkDataEntry arkDataEntry) ? arkDataEntry : null;
